@@ -1,0 +1,85 @@
+module count10 (
+    input clk,
+    input reset,
+    input ena,
+    output [3:0] q);
+    always@(posedge clk)begin
+        if(reset)
+            q<=4'b0;
+        else if(ena && q==4'd9)
+            q<=4'b0;
+        else if (ena) q<=q+4'b1;
+    end
+endmodule
+
+module count6 (
+    input clk,
+    input reset,
+    input ena,
+    output [3:0] q);
+    always@(posedge clk)begin
+        if(reset)
+            q<=4'b0;
+        else if(ena && q==4'd5)
+            q<=4'b0;
+        else if (ena) q<=q+4'b1;
+    end
+endmodule
+
+module top_module(
+    input clk,
+    input reset,
+    input ena,
+    output pm,
+    output [7:0] hh,
+    output [7:0] mm,
+    output [7:0] ss); 
+    
+    // pm toggle
+    always@(posedge clk)begin
+        if (!reset && ena && hh[7:4]==4'd1 && hh[3:0]==4'd1 && mm[7:4]==4'd5 && mm[3:0]==4'd9 && ss[7:4]==4'd5 && ss[3:0]==4'd9)
+    pm <= ~pm;
+        else if (reset)
+            pm <=1'b0;
+    end
+    
+    wire [4:0] enab;
+    
+    //enable assignment
+    assign enab[0] = ena;
+    assign enab[1] = enab[0] && ss[3:0]==4'd9;
+    assign enab[2] = enab[1] && ss[7:4]==4'd5;
+    assign enab[3] = enab[2] && mm[3:0] == 4'd9;
+    assign enab[4] = enab[3] && mm[7:4]==4'd5;
+
+    //seconds
+    count10 s1(clk,reset,enab[0],ss[3:0]);
+    count6 s2(clk,reset,enab[1],ss[7:4]);
+    
+    //minutes
+    count10 m1(clk,reset,enab[2],mm[3:0]);
+    count6 m2(clk,reset,enab[3],mm[7:4]);
+    
+    //hours
+    always @(posedge clk) begin
+        if (reset)
+            hh <= 8'h12;
+        else if (enab[4]) begin
+            case (hh)
+                8'h01: hh <= 8'h02;
+                8'h02: hh <= 8'h03;
+                8'h03: hh <= 8'h04;
+                8'h04: hh <= 8'h05;
+                8'h05: hh <= 8'h06;
+                8'h06: hh <= 8'h07;
+                8'h07: hh <= 8'h08;
+                8'h08: hh <= 8'h09;
+                8'h09: hh <= 8'h10;
+                8'h10: hh <= 8'h11;
+                8'h11: hh <= 8'h12;
+                8'h12: hh <= 8'h01;
+                default: hh <= 8'h12;
+            endcase
+        end
+    end
+endmodule
